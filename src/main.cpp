@@ -287,6 +287,7 @@ void simplify(int target_count){
     unsigned long start_size = Simplify::triangles.size();
     if (target_count >= static_cast<int>(start_size)){
         logWriter("No simplification needed\n");
+        Simplify::compact_mesh();
         return;
     }
 
