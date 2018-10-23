@@ -312,8 +312,8 @@ void transform(const BoundingBox &extent){
     }
 
     for(Simplify::Vertex &v : Simplify::vertices){
-        v.p.x = center_x - extent.min.x + (static_cast<double>(v.p.x) / static_cast<double>(arr_width)) * ext_width;
-        v.p.y = center_y - extent.max.y - (static_cast<double>(v.p.y) / static_cast<double>(arr_height)) * ext_height;
+        v.p.x = extent.min.x + (static_cast<double>(v.p.x) / static_cast<double>(arr_width)) * ext_width - center_x;
+        v.p.y = extent.max.y - (static_cast<double>(v.p.y) / static_cast<double>(arr_height)) * ext_height - center_y;
     }
 }
 
