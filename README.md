@@ -42,3 +42,16 @@ make
 | -bandNum | Raster band # to use. Defaults to `1`. | |
 | -rtc | Use Relative To Center (RTC) X/Y coordinates in the output PLY mesh. This can be useful since most 3D visualization software use floating coordinate precision to represent vertices and using absolute coordinates might lead to jittering artifacts. | |
 | -verbose | Print verbose output. | |
+
+## FAQ
+
+### How does it compare to https://github.com/heremaps/tin-terrain ?
+
+The main difference is the meshing approach and output type. Tin-terrain uses a greedy approach, dem2mesh uses a gridding + simplification approach. Tin-terrain can output to quantized-mesh format (useful for displaying in Cesium), dem2mesh does not.
+
+The meshing approach changes the way triangles are placed in the mesh. Greedy approaches tend to generate areas with large triangles in flat parts of the mesh, which is something we wanted to avoid in dem2mesh. The gridding approach generates more evenly sized and distributed triangles. Good sized triangles are important in OpenDroneMap for generating good orthophotos during the texturing step.
+
+## Credits
+
+- Fast Quadric Mesh Simplification code modified from https://github.com/sp4cerat/Fast-Quadric-Mesh-Simplification
+- Command line parser library modified from https://github.com/mkazhdan/PoissonRecon
