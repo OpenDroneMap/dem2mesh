@@ -71,13 +71,15 @@ cmdLineParameter< char* >
     OutputFile( "outputFile" );
 cmdLineParameter< int >
     MaxVertexCount( "maxVertexCount" ) ,
-    MaxTileLength( "maxTileLength" );
+    MaxTileLength( "maxTileLength" ) ,
+    BandNum ( "bandNum" );
 cmdLineReadable
     Rtc ( "rtc" ),
     Verbose( "verbose" );
 
 cmdLineReadable* params[] = {
-    &InputFile , &OutputFile , &MaxVertexCount , &MaxTileLength, 
+    &InputFile , &OutputFile , 
+    &MaxVertexCount , &MaxTileLength, &BandNum,
     &Rtc, &Verbose ,
     NULL
 };
@@ -88,6 +90,7 @@ void help(char *ex){
               << "\t -" << OutputFile.name << " <output PLY mesh>" << std::endl
               << "\t [-" << MaxVertexCount.name << " <target number vertices> (Default: 100000)]" << std::endl
               << "\t [-" << MaxTileLength.name << " <max length of a tile. Smaller values take longer to process but reduce memory usage by splitting the meshing process into tiles.> (Default: 1000)]" << std::endl
+              << "\t [-" << BandNum.name << " <Band number> (Default: 1)]" << std::endl
               << "\t [-" << Rtc.name << "]" << std::endl
               << "\t [-" << Verbose.name << "]" << std::endl;
     exit(EXIT_FAILURE);
@@ -280,12 +283,17 @@ void readBin(const std::string &filename, int blockX, int blockY){
 
 void simplify(int target_count){
     unsigned long start_size = Simplify::triangles.size();
+    if (target_count >= static_cast<int>(start_size)){
+        logWriter("No simplification needed\n");
+        return;
+    }
+
     const double AGRESSIVENESS = 5.0;
 
     Simplify::simplify_mesh(target_count, AGRESSIVENESS, Verbose.set);
     if ( Simplify::triangles.size() >= start_size) {
         std::cerr << "Unable to reduce mesh.\n";
-        exit(1);
+        exit(EXIT_FAILURE);
     }
 }
 
@@ -314,6 +322,7 @@ int main(int argc, char **argv) {
     if( !InputFile.set || !OutputFile.set ) help(argv[0]);
     if ( !MaxVertexCount.set ) MaxVertexCount.value = 100000;
     if ( !MaxTileLength.set ) MaxTileLength.value = 1000;
+    if ( !BandNum.set ) BandNum.value = 1;
 
     logWriter.verbose = Verbose.set;
     logWriter.outputFile = "dem2mesh.txt";
@@ -332,13 +341,21 @@ int main(int argc, char **argv) {
 
         logWriter("Extent is (%f, %f), (%f, %f)\n", extent.min.x, extent.max.x, extent.min.y, extent.max.y);
 
+        GDALRasterBand *band = dataset->GetRasterBand(BandNum.value);
+
+        int hasNoData = FALSE;
+        double nodata = band->GetNoDataValue(&hasNoData);
+
+        if (hasNoData){
+            logWriter("NoData value: %.18g\n", nodata);
+        }
+        logWriter("Description: %s\n", band->GetDescription());
+
         unsigned long long int vertex_count = static_cast<unsigned long long int>(arr_height) *
                                               static_cast<unsigned long long int>(arr_width);
 
         logWriter("Reading raster...\n");
         logWriter("Total vertices before simplification: %llu\n", vertex_count);
-
-        GDALRasterBand *band = dataset->GetRasterBand(1);
 
         int qtreeLevels = 0;
         int numBlocks = 1;
@@ -378,7 +395,7 @@ int main(int argc, char **argv) {
                     if (band->RasterIO( GF_Read, xOffset, yOffset + y, blockSizeX + blockXPad, 1,
                                         rasterData, blockSizeX + blockXPad, 1, GDT_Float32, 0, 0 ) == CE_Failure){
                         std::cerr << "Cannot access raster data" << std::endl;
-                        exit(1);
+                        exit(EXIT_FAILURE);
                     }
 
                     for (int x = 0; x < blockSizeX + blockXPad; x++){
@@ -403,7 +420,12 @@ int main(int argc, char **argv) {
                         if (y == 0 || x == 0 || y == rows - 2 || x == cols - 2) t1.deleted = -1; // freeze
                         else t1.deleted = 0;
 
-                        Simplify::triangles.push_back(t1);
+                        if (!hasNoData ||
+                           (Simplify::vertices[t1.v[0]].p.z != nodata &&
+                            Simplify::vertices[t1.v[1]].p.z != nodata &&
+                            Simplify::vertices[t1.v[2]].p.z != nodata)){
+                            Simplify::triangles.push_back(t1);
+                        }
 
                         Simplify::Triangle t2;
                         t2.v[0] = cols * (y + 1) + x;
@@ -412,7 +434,13 @@ int main(int argc, char **argv) {
                         if (y == 0 || x == 0 || y == rows - 2 || x == cols - 2) t2.deleted = -1; // freeze
                         else t2.deleted = 0;
 
-                        Simplify::triangles.push_back(t2);
+                        if (!hasNoData ||
+                           (Simplify::vertices[t2.v[0]].p.z != nodata &&
+                            Simplify::vertices[t2.v[1]].p.z != nodata &&
+                            Simplify::vertices[t2.v[2]].p.z != nodata)){
+                            Simplify::triangles.push_back(t2);
+                        }
+
                     }
                 }
 
@@ -428,7 +456,6 @@ int main(int argc, char **argv) {
 
                 logWriter("Sampled %d faces, target is %d\n", static_cast<int>(Simplify::triangles.size()), target_count);
                 logWriter("Simplifying...\n");
-
                 simplify(target_count);
 
                 if (qtreeLevels == 0){
