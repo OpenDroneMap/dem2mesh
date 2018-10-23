@@ -72,6 +72,7 @@ cmdLineParameter< char* >
 cmdLineParameter< int >
     MaxVertexCount( "maxVertexCount" ) ,
     MaxTileLength( "maxTileLength" ) ,
+    Aggressiveness ( "aggressiveness" ) ,
     BandNum ( "bandNum" );
 cmdLineReadable
     Rtc ( "rtc" ),
@@ -79,7 +80,7 @@ cmdLineReadable
 
 cmdLineReadable* params[] = {
     &InputFile , &OutputFile , 
-    &MaxVertexCount , &MaxTileLength, &BandNum,
+    &MaxVertexCount , &MaxTileLength, &Aggressiveness, &BandNum,
     &Rtc, &Verbose ,
     NULL
 };
@@ -90,6 +91,7 @@ void help(char *ex){
               << "\t -" << OutputFile.name << " <output PLY mesh>" << std::endl
               << "\t [-" << MaxVertexCount.name << " <target number vertices> (Default: 100000)]" << std::endl
               << "\t [-" << MaxTileLength.name << " <max length of a tile. Smaller values take longer to process but reduce memory usage by splitting the meshing process into tiles.> (Default: 1000)]" << std::endl
+              << "\t [-" << Aggressiveness.name << " <simplification aggressiveness factor. Higher values simplify the mesh more aggressively but can decrease the fidelity of the mesh. ([1-10] Default: 5)]" << std::endl
               << "\t [-" << BandNum.name << " <Band number> (Default: 1)]" << std::endl
               << "\t [-" << Rtc.name << "]" << std::endl
               << "\t [-" << Verbose.name << "]" << std::endl;
@@ -288,9 +290,7 @@ void simplify(int target_count){
         return;
     }
 
-    const double AGRESSIVENESS = 5.0;
-
-    Simplify::simplify_mesh(target_count, AGRESSIVENESS, Verbose.set);
+    Simplify::simplify_mesh(target_count, static_cast<double>(Aggressiveness.value), Verbose.set);
     if ( Simplify::triangles.size() >= start_size) {
         std::cerr << "Unable to reduce mesh.\n";
         exit(EXIT_FAILURE);
@@ -322,8 +322,10 @@ int main(int argc, char **argv) {
     if( !InputFile.set || !OutputFile.set ) help(argv[0]);
     if ( !MaxVertexCount.set ) MaxVertexCount.value = 100000;
     if ( !MaxTileLength.set ) MaxTileLength.value = 1000;
+    if ( !Aggressiveness.set ) Aggressiveness.value = 5;
     if ( !BandNum.set ) BandNum.value = 1;
 
+    Aggressiveness.value = std::min(10, std::max(1, Aggressiveness.value));
     logWriter.verbose = Verbose.set;
     logWriter.outputFile = "dem2mesh.txt";
     logArgs(params, logWriter);

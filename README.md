@@ -38,6 +38,7 @@ make
 | -outputFile | Path to PLY mesh output | ✔ |
 | -maxVertexCount | Target number of vertices for the output mesh. This number is not always guaranteed to be reached. Defaults to `100000` | |
 | -maxTileLength | Max length of a tile. Smaller values take longer to process but reduce memory usage by splitting the meshing process into tiles. Defaults to `1000`. | |
+| -aggressiveness | Value between `1` and `10` that specifies how "aggressive" the mesh simplification process should be at each iteration. Higher values simplify the mesh more aggressively but can decrease the fidelity of the mesh. Defaults to `5`. | |
 | -bandNum | Raster band # to use. Defaults to `1`. | |
 | -rtc | Use Relative To Center (RTC) X/Y coordinates in the output PLY mesh. This can be useful since most 3D visualization software use floating coordinate precision to represent vertices and using absolute coordinates might lead to jittering artifacts. | |
 | -verbose | Print verbose output. | |
