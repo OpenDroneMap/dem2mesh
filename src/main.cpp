@@ -137,7 +137,7 @@ void writePly(const std::string &filename){
         << "property float y" << std::endl
         << "property float z" << std::endl
         << "element face " << Simplify::triangles.size() << std::endl
-        << "property list uint8 uint32 vertex_indices" << std::endl
+        << "property list uchar int vertex_indices" << std::endl
         << "end_header" << std::endl;
 
     for(Simplify::Vertex &v : Simplify::vertices){
