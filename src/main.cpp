@@ -293,8 +293,7 @@ void simplify(int target_count){
 
     Simplify::simplify_mesh(target_count, static_cast<double>(Aggressiveness.value), Verbose.set);
     if ( Simplify::triangles.size() >= start_size) {
-        std::cerr << "Unable to reduce mesh.\n";
-        exit(EXIT_FAILURE);
+        logWriter("Unable to reduce mesh. We tried!\n");
     }
 }
 
