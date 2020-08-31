@@ -390,12 +390,12 @@ namespace Simplify
 					// not flipped, so remove edge
 					v0.p=p;
 					v0.q=v1.q+v0.q;
-					int tstart=refs.size();
+                    int tstart=refs[thread]->size();
 
                     update_triangles(i0,v0,deleted0,deleted_triangles,thread);
                     update_triangles(i0,v1,deleted1,deleted_triangles,thread);
 
-					int tcount=refs.size()-tstart;
+                    int tcount=refs[thread]->size()-tstart;
 
 					if(tcount<=v0.tcount)
 					{
@@ -513,7 +513,7 @@ namespace Simplify
                 loopj(0,3) (*vertices[thread])[t.v[j]].q =
                     (*vertices[thread])[t.v[j]].q+SymetricMatrix(n.x,n.y,n.z,-n.dot(p[0]));
 			}
-            loopi(0,(*triangles[thread]).size())
+            loopi(0,triangles[thread]->size())
 			{
 				// Calc Edge Error
                 Triangle &t=(*triangles[thread])[i];vec3f p;

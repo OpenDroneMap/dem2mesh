@@ -8,10 +8,10 @@ Fast generation of 2.5D meshes from elevation models.
 
 ## Dependencies
 
-GDAL is the only dependency. To install it run:
+GDAL and OpenMP are the only dependencies. To install it run:
 
 ```
-sudo apt-get install -y libgdal-dev 
+sudo apt-get install -y libgdal-dev libomp-dev
 ```
 
 ## Building
@@ -40,6 +40,7 @@ make
 | -maxTileLength | Max length of a tile. Smaller values take longer to process but reduce memory usage by splitting the meshing process into tiles. Defaults to `1000`. | |
 | -aggressiveness | Value between `1` and `10` that specifies how "aggressive" the mesh simplification process should be at each iteration. Higher values simplify the mesh more aggressively but can decrease the fidelity of the mesh. Defaults to `5`. | |
 | -bandNum | Raster band # to use. Defaults to `1`. | |
+| -maxConcurrency | Maximum number of threads to use. Defaults to all CPUs available. | |
 | -rtc | Use Relative To Center (RTC) X/Y coordinates in the output PLY mesh. This can be useful since most 3D visualization software use floating coordinate precision to represent vertices and using absolute coordinates might lead to jittering artifacts. | |
 | -verbose | Print verbose output. | |
 

@@ -382,11 +382,16 @@ int main(int argc, char **argv) {
         logWriter("Splitting area in %d\n", numBlocks);
         logWriter("Block size is %d, %d\n", blockSizeX, blockSizeY);
 
-        float *rasterData = new float[blockSizeX + 1];
-
         logWriter("Concurrency set to %d\n", MaxConcurrency.value);
         Simplify::allocate(MaxConcurrency.value);
         omp_set_num_threads(MaxConcurrency.value);
+
+        int rasterDataBlocks = std::min(MaxConcurrency.value, numBlocks);
+        logWriter("Allocating %d raster data blocks of %d bytes\n", rasterDataBlocks, sizeof(float) * (blockSizeX + 1));
+        float *rasterData = new float[rasterDataBlocks * (blockSizeX + 1)];
+
+        omp_lock_t readLock;
+        omp_init_lock(&readLock);
 
         #pragma omp parallel for collapse(2)
         for (int blockX = 0; blockX < subdivisions; blockX++){
@@ -404,19 +409,19 @@ int main(int argc, char **argv) {
 
                 for (int y = 0; y < blockSizeY + blockYPad; y++){
 
-                    // TODO: needs lock
+                    omp_set_lock(&readLock);
                     if (band->RasterIO( GF_Read, xOffset, yOffset + y, blockSizeX + blockXPad, 1,
-                                        rasterData, blockSizeX + blockXPad, 1, GDT_Float32, 0, 0 ) == CE_Failure){
+                                        rasterData + t * (blockSizeX + 1), blockSizeX + blockXPad, 1, GDT_Float32, 0, 0 ) == CE_Failure){
                         std::cerr << "Cannot access raster data" << std::endl;
                         exit(EXIT_FAILURE);
                     }
-                    // TODO: END LOCK
+                    omp_unset_lock(&readLock);
 
                     for (int x = 0; x < blockSizeX + blockXPad; x++){
                         Simplify::Vertex v;
                         v.p.x = xOffset + x;
                         v.p.y = yOffset + y;
-                        v.p.z = rasterData[x];
+                        v.p.z = (rasterData + t * (blockSizeX + 1))[x];
 
                         Simplify::vertices[t]->push_back(v);
                     }
@@ -519,7 +524,7 @@ int main(int argc, char **argv) {
             vertexToVertexMap.clear();
 
             logWriter("Simplifying final mesh...\n");
-            int target_count = std::min(MaxVertexCount.value * 2, static_cast<int>(Simplify::triangles.size()));
+            int target_count = std::min(MaxVertexCount.value * 2, static_cast<int>(Simplify::triangles[0]->size()));
             simplify(target_count, 0);
             transform(extent, 0);
             logWriter("Writing to file... ");
