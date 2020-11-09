@@ -47,18 +47,18 @@ typedef struct BoundingBox{
     BoundingBox(Point2D min, Point2D max): max(max), min(min){}
 } BoundingBox;
 
-struct PlyPoint{
+typedef struct PlyPoint{
     float x;
     float y;
     float z;
-} p;
+} PlyPoint;
 size_t psize = sizeof(float) * 3;
 
-struct PlyFace{
+typedef struct PlyFace{
     uint32_t p1;
     uint32_t p2;
     uint32_t p3;
-} face;
+} PlyFace;
 size_t fsize = sizeof(uint32_t) * 3;
 
 int arr_width, arr_height;
@@ -143,6 +143,7 @@ void writePly(const std::string &filename, int thread){
         << "property list uchar int vertex_indices" << std::endl
         << "end_header" << std::endl;
 
+    PlyPoint p;
     for(Simplify::Vertex &v : *Simplify::vertices[thread]){
         p.x = static_cast<float>(v.p.x);
         p.y = static_cast<float>(v.p.y);
@@ -150,6 +151,7 @@ void writePly(const std::string &filename, int thread){
         f.write(reinterpret_cast<char *>(&p), psize);
     }
 
+    PlyFace face;
     uint8_t three = 3;
     for(Simplify::Triangle &t : *Simplify::triangles[thread]){
         face.p1 = static_cast<uint32_t>(t.v[0]);
@@ -174,6 +176,7 @@ void writeBin(const std::string &filename, int blockWidth, int blockHeight, int 
     f.write(reinterpret_cast<char *>(&vsize), sizeof(vsize));
     f.write(reinterpret_cast<char *>(&tsize), sizeof(tsize));
 
+    PlyPoint p;
     for(Simplify::Vertex &v : *Simplify::vertices[thread]){
         p.x = static_cast<float>(v.p.x);
         p.y = static_cast<float>(v.p.y);
@@ -181,6 +184,7 @@ void writeBin(const std::string &filename, int blockWidth, int blockHeight, int 
         f.write(reinterpret_cast<char *>(&p), psize);
     }
 
+    PlyFace face;
     for(Simplify::Triangle &t : *Simplify::triangles[thread]){
         face.p1 = static_cast<uint32_t>(t.v[0]);
         face.p2 = static_cast<uint32_t>(t.v[1]);
