@@ -9,7 +9,7 @@ Fast generation of 2.5D meshes from elevation models.
 ## Quickstart
 
 ```bash
-docker run -it --rm -v /path-your-data:/data kladess/dem2mesh -rtc -verbose -inputFile data/dem.tif -outputFile /data/mesh.ply
+docker run -it --rm -v /path-your-data:/data kladess/dem2mesh -rtc -verbose -inputFile /data/dem.tif -outputFile /data/mesh.ply
 ```
 
 ## Dependencies

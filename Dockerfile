@@ -24,4 +24,4 @@ RUN apt-get --assume-yes install libgdal-dev libomp-dev
 COPY --from=builder /code /code
 WORKDIR /code
 
-ENTRYPOINT ["/code/build/dem2mesh"]
+CMD ["/code/build/dem2mesh"]
