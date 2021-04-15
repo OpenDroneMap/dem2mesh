@@ -6,6 +6,12 @@ Fast generation of 2.5D meshes from elevation models.
 
 ![image](https://user-images.githubusercontent.com/1951843/47351205-7e22bb80-d685-11e8-87c5-33b21ae05b75.png)
 
+## Quickstart
+
+```bash
+docker run -it --rm -v /path-your-data:/data kladess/dem2mesh -rtc -verbose -inputFile data/dem.tif -outputFile /data/mesh.ply
+```
+
 ## Dependencies
 
 GDAL and OpenMP are the only dependencies. To install it run:
