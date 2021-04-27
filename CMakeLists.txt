@@ -12,7 +12,9 @@ endif()
 include_directories(${GDAL_INCLUDE_DIR})
 
 # Add compiler options.
+if (NOT WIN32)
 add_definitions(-Wall -Wextra)
+endif()
 
 # Add source directory
 aux_source_directory("./src" SRC_LIST)
