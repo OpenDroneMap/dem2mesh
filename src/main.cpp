@@ -126,7 +126,7 @@ BoundingBox getExtent(GDALDataset *dataset){
 
 void writePly(const std::string &filename, int thread){
     // Start writing ply file
-    std::ofstream f (filename);
+    std::ofstream f (filename, std::ios::binary);
     f << "ply" << std::endl;
 
     if (IS_BIG_ENDIAN){
