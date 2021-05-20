@@ -336,7 +336,7 @@ int main(int argc, char **argv) {
 
     Aggressiveness.value = std::min(10, std::max(1, Aggressiveness.value));
     logWriter.verbose = Verbose.set;
-    logWriter.outputFile = "dem2mesh.txt";
+    logWriter.outputFile = NULL;
     logArgs(params, logWriter);
 
     GDALDataset  *dataset;
