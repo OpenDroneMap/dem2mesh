@@ -23,5 +23,4 @@ RUN  apt-get update
 RUN apt-get --assume-yes install libgdal-dev libomp-dev
 COPY --from=builder /code /code
 WORKDIR /code
-
-CMD ["/code/build/dem2mesh"]
+RUN ln -sfnv /code/build/dem2mesh /usr/bin/dem2mesh
