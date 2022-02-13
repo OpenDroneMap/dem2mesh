@@ -1099,7 +1099,7 @@ int Triangulation::savePLY(const char *fname, bool ascii)
 
  strcpy(triname,fname);
  
- if ((fp = fopen(triname,"w")) == NULL)
+ if ((fp = fopen(triname,ascii ? "w" : "wb")) == NULL)
  {
   JMesh::warning("Can't open '%s' for output !\n",triname);
   return 1;
