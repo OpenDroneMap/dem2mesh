@@ -19,9 +19,12 @@ endif()
 # Add source directory
 aux_source_directory("./src" SRC_LIST)
 
+add_subdirectory("vendor/jmeshlib")
+include_directories("vendor/jmeshlib/include")
+
 # Add exectuteable
 add_executable(${PROJECT_NAME} ${SRC_LIST})
 
-target_link_libraries(${PROJECT_NAME} ${GDAL_LIBRARY})
+target_link_libraries(${PROJECT_NAME} ${GDAL_LIBRARY} jmeshlib)
 
 install(TARGETS ${PROJECT_NAME} RUNTIME DESTINATION bin)

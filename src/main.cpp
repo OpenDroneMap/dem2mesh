@@ -25,6 +25,7 @@ along with dem2mesh.  If not, see <https://www.gnu.org/licenses/>.
 #include "CmdLineParser.h"
 #include "Logger.h"
 #include "Simplify.h"
+#include "tin.h"
 
 #include "gdal_priv.h"
 #include "cpl_conv.h" // for CPLMalloc()
@@ -76,6 +77,8 @@ cmdLineParameter< int >
     Aggressiveness ( "aggressiveness" ) ,
     BandNum ( "bandNum" ) ,
     MaxConcurrency ( "maxConcurrency" );
+cmdLineParameter< float >
+    EdgeSwapThreshold ( "edgeSwapThreshold" );
 cmdLineReadable
     Rtc ( "rtc" ),
     Verbose( "verbose" );
@@ -83,6 +86,7 @@ cmdLineReadable
 cmdLineReadable* params[] = {
     &InputFile , &OutputFile , 
     &MaxVertexCount , &MaxTileLength, &Aggressiveness, &BandNum, &MaxConcurrency,
+    &EdgeSwapThreshold,
     &Rtc, &Verbose ,
     NULL
 };
@@ -96,6 +100,7 @@ void help(char *ex){
               << "\t [-" << Aggressiveness.name << " <simplification aggressiveness factor. Higher values simplify the mesh more aggressively but can decrease the fidelity of the mesh. ([1-10] Default: 5)]" << std::endl
               << "\t [-" << BandNum.name << " <Band number> (Default: 1)]" << std::endl
               << "\t [-" << MaxConcurrency.name << " <threads> (Default: all cpus)]" << std::endl
+              << "\t [-" << EdgeSwapThreshold.name << " <dot product threshold (between 0-1) to perform edge collapses. Performing edge collapses can violate the 2.5D constraints, but leads to better triangles for vertical structures> (Default: disabled)]" << std::endl
               << "\t [-" << Rtc.name << "]" << std::endl
               << "\t [-" << Verbose.name << "]" << std::endl;
     exit(EXIT_FAILURE);
@@ -195,6 +200,56 @@ void writeBin(const std::string &filename, int blockWidth, int blockHeight, int 
     f.close();
 }
 
+
+void saveFinal(const std::string &filename, int thread, float edgeSwapThreshold){
+    if (edgeSwapThreshold == -1.0){
+        logWriter("Writing to file... ");
+        writePly(filename, thread);
+        logWriter(" done!\n");
+    }else{
+        logWriter("Performing edge collapses...\n");
+
+        JMesh::init();
+        Triangulation tin;
+
+        unsigned long nv = Simplify::vertices[thread]->size();
+
+        for(Simplify::Vertex &v : *Simplify::vertices[thread]){
+            tin.V.appendTail(new Vertex(v.p.x,v.p.y,v.p.z));
+        }
+
+        Vertex *v;
+        Node *n;
+        unsigned long int i = 0;
+        ExtVertex **var = (ExtVertex **)malloc(sizeof(ExtVertex *)*nv);
+
+        TIN_FOREACHVERTEX(v, n) var[i++] = new ExtVertex(v);
+
+        for(Simplify::Triangle &t : *Simplify::triangles[thread]){
+            tin.CreateIndexedTriangle(var, t.v[0], t.v[1], t.v[2]);
+        }
+
+        for (i=0; i<nv; i++) delete(var[i]);
+        free(var);
+
+        tin.removeVertices();
+        tin.cutAndStitch();
+        tin.forceNormalConsistence();
+        tin.duplicateNonManifoldVertices();
+        tin.removeDuplicatedTriangles();
+
+        tin.eulerUpdate();
+        tin.verticalEdgeTagging(edgeSwapThreshold);
+        tin.iterativeEdgeSwaps();
+        tin.removeUnlinkedElements();
+        tin.mergeCoincidentEdges();
+        tin.removeDegenerateTriangles();
+
+        logWriter("Writing to file... ");
+        tin.savePLY(filename.c_str(), false);
+        logWriter(" done!\n");
+    }
+}
 
 // Keep track of edge points's vertex IDs
 // During the merge step we need to replace
@@ -333,6 +388,7 @@ int main(int argc, char **argv) {
     if ( !BandNum.set ) BandNum.value = 1;
     if ( !MaxConcurrency.set ) MaxConcurrency.value = omp_get_max_threads();
     if ( MaxConcurrency.value == 0 ) MaxConcurrency.value = 1;
+    if ( !EdgeSwapThreshold.set ) EdgeSwapThreshold.value = -1.0;
 
     Aggressiveness.value = std::min(10, std::max(1, Aggressiveness.value));
     logWriter.verbose = Verbose.set;
@@ -484,16 +540,14 @@ int main(int argc, char **argv) {
                 if (qtreeLevels == 0){
                     transform(extent, t);
                     logWriter("Single quad tree level, saving to PLY\n");
-                    logWriter("Writing to file...");
-                    writePly(OutputFile.value, t);
+                    saveFinal(OutputFile.value, t, EdgeSwapThreshold.value);
                 }else{
                     logWriter("Writing to binary file...");
                     std::stringstream ss;
                     ss << OutputFile.value << "." << blockX << "-" << blockY << ".bin";
                     writeBin(ss.str(), blockSizeX + blockXPad, blockSizeY + blockYPad, t);
+                    logWriter(" done!\n");
                 }
-
-                logWriter(" done!\n");
             }
         }
 
@@ -531,9 +585,7 @@ int main(int argc, char **argv) {
             int target_count = std::min(MaxVertexCount.value * 2, static_cast<int>(Simplify::triangles[0]->size()));
             simplify(target_count, 0);
             transform(extent, 0);
-            logWriter("Writing to file... ");
-            writePly(OutputFile.value, 0);
-            logWriter(" done!\n");
+            saveFinal(OutputFile.value, 0, EdgeSwapThreshold.value);
         }
 
         Simplify::cleanup();
