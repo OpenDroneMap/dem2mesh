@@ -220,7 +220,7 @@ void saveFinal(const std::string &filename, int thread, float edgeSwapThreshold)
 
         Vertex *v;
         Node *n;
-        int i = 0;
+        unsigned long int i = 0;
         ExtVertex **var = (ExtVertex **)malloc(sizeof(ExtVertex *)*nv);
 
         TIN_FOREACHVERTEX(v, n) var[i++] = new ExtVertex(v);
@@ -228,6 +228,15 @@ void saveFinal(const std::string &filename, int thread, float edgeSwapThreshold)
         for(Simplify::Triangle &t : *Simplify::triangles[thread]){
             tin.CreateIndexedTriangle(var, t.v[0], t.v[1], t.v[2]);
         }
+
+        for (i=0; i<nv; i++) delete(var[i]);
+        free(var);
+
+        tin.removeVertices();
+        tin.cutAndStitch();
+        tin.forceNormalConsistence();
+        tin.duplicateNonManifoldVertices();
+        tin.removeDuplicatedTriangles();
 
         tin.eulerUpdate();
         tin.verticalEdgeTagging(edgeSwapThreshold);
