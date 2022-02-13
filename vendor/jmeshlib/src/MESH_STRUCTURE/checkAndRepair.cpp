@@ -397,8 +397,8 @@ i++;
  if (degn)
  {
   FOREACHTRIANGLE(t, n) if (t->isDegenerate()) MARK_VISIT(t); else UNMARK_VISIT(t);
-  JMesh::warning("removeDegenerateTriangles: %d degeneracies couldn't be removed.\n",degn);
-  JMesh::warning("removeDegenerateTriangles: and have been selected.\n");
+//  JMesh::warning("removeDegenerateTriangles: %d degeneracies couldn't be removed.\n",degn);
+//  JMesh::warning("removeDegenerateTriangles: and have been selected.\n");
   return -tcs;
  }
 

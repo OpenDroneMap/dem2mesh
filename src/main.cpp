@@ -207,7 +207,8 @@ void saveFinal(const std::string &filename, int thread, float edgeSwapThreshold)
         writePly(filename, thread);
         logWriter(" done!\n");
     }else{
-        // Before saving to PLY, we perform edge collapses
+        logWriter("Performing edge collapses...\n");
+
         JMesh::init();
         Triangulation tin;
 
@@ -229,9 +230,15 @@ void saveFinal(const std::string &filename, int thread, float edgeSwapThreshold)
         }
 
         tin.eulerUpdate();
+        tin.verticalEdgeTagging(edgeSwapThreshold);
+        tin.iterativeEdgeSwaps();
+        tin.removeUnlinkedElements();
+        tin.mergeCoincidentEdges();
+        tin.removeDegenerateTriangles();
 
-        tin.saveOBJ("/data/drone/brighton2/odm_meshing/tmp/out.obj");
-        logWriter("SAVED OBJ!\n");
+        logWriter("Writing to file... ");
+        tin.savePLY(filename.c_str(), false);
+        logWriter(" done!\n");
     }
 }
 

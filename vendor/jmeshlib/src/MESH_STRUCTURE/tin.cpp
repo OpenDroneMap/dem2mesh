@@ -1369,7 +1369,7 @@ bool Triangulation::iterativeEdgeSwaps()
   MARK_VISIT(e); if ((!selection || (IS_VISITED(e->t1) && IS_VISITED(e->t2)))) toswap.appendTail(e);
  }
 
- JMesh::begin_progress();
+ //JMesh::begin_progress();
  while (swaps && totits++ < 10)
  {
   swaps = 0; for (n=toswap.head(); n!=NULL; )
@@ -1398,16 +1398,16 @@ bool Triangulation::iterativeEdgeSwaps()
     }
    }
   }
-  JMesh::report_progress("Swaps: %d      ", swaps);
+  //JMesh::report_progress("Swaps: %d      ", swaps);
  }
- JMesh::end_progress();
+ //JMesh::end_progress();
 
  FOREACHEDGE(e, n) UNMARK_VISIT(e);
 
  if (totits >= 10)
  {
-  JMesh::warning("Optimization did not converge after 10 iterations! Stopping.\n");
-  JMesh::warning("You may try to run the method again.\n");
+//  JMesh::warning("Optimization did not converge after 10 iterations! Stopping.\n");
+//  JMesh::warning("You may try to run the method again.\n");
   return 0;
  }
 

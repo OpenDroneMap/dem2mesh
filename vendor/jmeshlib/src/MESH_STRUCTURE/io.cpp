@@ -1108,7 +1108,7 @@ int Triangulation::savePLY(const char *fname, bool ascii)
  fprintf(fp,"ply\n");
  if (ascii) fprintf(fp,"format ascii 1.0\n");
  else fprintf(fp,"format binary_little_endian 1.0\n");
- PRINT_PLY_COMMENT(fp);
+//  PRINT_PLY_COMMENT(fp);
  fprintf(fp,"element vertex %d\n",V.numels());
  fprintf(fp,"property float x\n");
  fprintf(fp,"property float y\n");
