@@ -47,6 +47,7 @@ make
 | -aggressiveness | Value between `1` and `10` that specifies how "aggressive" the mesh simplification process should be at each iteration. Higher values simplify the mesh more aggressively but can decrease the fidelity of the mesh. Defaults to `5`. | |
 | -bandNum | Raster band # to use. Defaults to `1`. | |
 | -maxConcurrency | Maximum number of threads to use. Defaults to all CPUs available. | |
+| -edgeSwapThreshold | Dot product threshold (between 0-1) to perform edge collapses. Performing edge collapses can violate the 2.5D constraints, but leads to better triangles for vertical structures. Defaults to `disabled`. | |
 | -rtc | Use Relative To Center (RTC) X/Y coordinates in the output PLY mesh. This can be useful since most 3D visualization software use floating coordinate precision to represent vertices and using absolute coordinates might lead to jittering artifacts. | |
 | -verbose | Print verbose output. | |
 
