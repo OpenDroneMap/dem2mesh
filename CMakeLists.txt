@@ -1,6 +1,13 @@
 project(dem2mesh)
 cmake_minimum_required(VERSION 2.8)
 
+if(NOT CMAKE_BUILD_TYPE)
+  set(CMAKE_BUILD_TYPE "Release" CACHE STRING
+      "Choose the type of build, options are: Debug Release
+RelWithDebInfo MinSizeRel."
+      FORCE)
+endif()
+
 set (CMAKE_CXX_STANDARD 11)
 find_package(GDAL REQUIRED)
 find_package(OpenMP REQUIRED)
