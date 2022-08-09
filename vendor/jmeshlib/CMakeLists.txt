@@ -9,6 +9,8 @@ if (NOT MSVC)
 add_compile_options(-fpermissive)
 endif()
 
+add_definitions(-DIS64BITPLATFORM)
+
 set(HEADERS
     ./include/binTree.h
     ./include/clusterGraph.h
