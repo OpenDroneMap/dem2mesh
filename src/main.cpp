@@ -379,6 +379,8 @@ void transform(const BoundingBox &extent, int thread){
     }
 }
 
+BoundingBox extent;
+
 int main(int argc, char **argv) {
     cmdLineParse( argc-1 , &argv[1] , params );
     if( !InputFile.set || !OutputFile.set ) help(argv[0]);
@@ -404,7 +406,7 @@ int main(int argc, char **argv) {
         arr_height = dataset->GetRasterYSize();
 
         logWriter("Raster Size is %dx%d\n", arr_width, arr_height);
-        BoundingBox extent = getExtent(dataset);
+        extent = getExtent(dataset);
 
         logWriter("Extent is (%f, %f), (%f, %f)\n", extent.min.x, extent.max.x, extent.min.y, extent.max.y);
 
