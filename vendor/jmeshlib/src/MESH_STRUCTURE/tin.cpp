@@ -1180,17 +1180,7 @@ void Triangulation::verticalEdgeTagging(const double dotAngle)
     Point n2 =  t2->getNormal();
     
     if (!n1.isNull() && !n2.isNull() && up * n1 > dotAngle && up * n2 > dotAngle){
-      bool spike1 = (t1->e1->length() > t1->e2->length() * 4) ||
-                  (t1->e2->length() > t1->e3->length() * 4) ||
-                  (t1->e3->length() > t1->e1->length() * 4);
-      bool spike2 = (t2->e1->length() > t2->e2->length() * 4) ||
-                  (t2->e2->length() > t2->e3->length() * 4) ||
-                  (t2->e3->length() > t2->e1->length() * 4);
-      if (spike1 && spike2){
         TAG_SHARPEDGE(e);
-      }else{
-        UNTAG_SHARPEDGE(e);
-      }
     //JMesh::warning("!");
     } else UNTAG_SHARPEDGE(e);
   }else UNTAG_SHARPEDGE(e);
@@ -1399,7 +1389,7 @@ bool Triangulation::iterativeEdgeSwaps()
     l = e->delaunayMinAngle();
     if (e->swap())
     {
-     if (e->t1->isNeedle() || e->t2->isNeedle() || e->delaunayMinAngle() <= l*1.000001 || nor*e->t1->getNormal() <= 0.5 || nor*e->t2->getNormal() <= 0.5 || up*e->t1->getNormal() < -0.05 || up*e->t2->getNormal() < -0.05) e->swap(1);
+     if (e->t1->isNeedle() || e->t2->isNeedle() || e->delaunayMinAngle() <= l*1.000001 || nor*e->t1->getNormal() <= 0.5 || nor*e->t2->getNormal() <= 0.5 || up*e->t1->getNormal() < -0.05 || up*e->t2->getNormal() < -0.05 || e->t1->getNormal() * e->t2->getNormal() < 0.2) e->swap(1);
      else
      {
       swaps++;
