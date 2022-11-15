@@ -1371,6 +1371,7 @@ bool Triangulation::iterativeEdgeSwaps()
  int swaps=1, totits=1;
  Point n1, n2, nor;
  List toswap;
+ Point up(0, 0, 1);
 
  bool selection=0;
  Triangle *t;
@@ -1398,7 +1399,7 @@ bool Triangulation::iterativeEdgeSwaps()
     l = e->delaunayMinAngle();
     if (e->swap())
     {
-     if (e->t1->isNeedle() || e->t2->isNeedle() || e->delaunayMinAngle() <= l*1.000001 || nor*e->t1->getNormal() <= 0.5 || nor*e->t2->getNormal() <= 0.5) e->swap(1);
+     if (e->t1->isNeedle() || e->t2->isNeedle() || e->delaunayMinAngle() <= l*1.000001 || nor*e->t1->getNormal() <= 0.5 || nor*e->t2->getNormal() <= 0.5 || up*e->t1->getNormal() < -0.05 || up*e->t2->getNormal() < -0.05) e->swap(1);
      else
      {
       swaps++;
