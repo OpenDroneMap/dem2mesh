@@ -209,45 +209,52 @@ void saveFinal(const std::string &filename, int thread, float edgeSwapThreshold)
     }else{
         logWriter("Performing edge collapses...\n");
 
-        JMesh::init();
-        Triangulation tin;
+        try{
+            JMesh::init();
+            Triangulation tin;
 
-        unsigned long nv = Simplify::vertices[thread]->size();
+            unsigned long nv = Simplify::vertices[thread]->size();
 
-        for(Simplify::Vertex &v : *Simplify::vertices[thread]){
-            tin.V.appendTail(new Vertex(v.p.x,v.p.y,v.p.z));
+            for(Simplify::Vertex &v : *Simplify::vertices[thread]){
+                tin.V.appendTail(new Vertex(v.p.x,v.p.y,v.p.z));
+            }
+
+            Vertex *v;
+            Node *n;
+            unsigned long int i = 0;
+            ExtVertex **var = (ExtVertex **)malloc(sizeof(ExtVertex *)*nv);
+
+            TIN_FOREACHVERTEX(v, n) var[i++] = new ExtVertex(v);
+
+            for(Simplify::Triangle &t : *Simplify::triangles[thread]){
+                tin.CreateIndexedTriangle(var, t.v[0], t.v[1], t.v[2]);
+            }
+
+            for (i=0; i<nv; i++) delete(var[i]);
+            free(var);
+
+            tin.removeVertices();
+            tin.cutAndStitch();
+            tin.forceNormalConsistence();
+            tin.duplicateNonManifoldVertices();
+            tin.removeDuplicatedTriangles();
+
+            tin.eulerUpdate();
+            tin.verticalEdgeTagging(edgeSwapThreshold);
+            tin.iterativeEdgeSwaps();
+            tin.removeUnlinkedElements();
+            tin.mergeCoincidentEdges();
+            tin.removeDegenerateTriangles();
+
+            logWriter("Writing to file... ");
+            tin.savePLY(filename.c_str(), false);
+            logWriter(" done!\n");
+        }catch(const std::runtime_error &e){
+            logWriter(e.what());
+            logWriter("\nWriting to file... ");
+            writePly(filename, thread);
+            logWriter(" done!\n");
         }
-
-        Vertex *v;
-        Node *n;
-        unsigned long int i = 0;
-        ExtVertex **var = (ExtVertex **)malloc(sizeof(ExtVertex *)*nv);
-
-        TIN_FOREACHVERTEX(v, n) var[i++] = new ExtVertex(v);
-
-        for(Simplify::Triangle &t : *Simplify::triangles[thread]){
-            tin.CreateIndexedTriangle(var, t.v[0], t.v[1], t.v[2]);
-        }
-
-        for (i=0; i<nv; i++) delete(var[i]);
-        free(var);
-
-        tin.removeVertices();
-        tin.cutAndStitch();
-        tin.forceNormalConsistence();
-        tin.duplicateNonManifoldVertices();
-        tin.removeDuplicatedTriangles();
-
-        tin.eulerUpdate();
-        tin.verticalEdgeTagging(edgeSwapThreshold);
-        tin.iterativeEdgeSwaps();
-        tin.removeUnlinkedElements();
-        tin.mergeCoincidentEdges();
-        tin.removeDegenerateTriangles();
-
-        logWriter("Writing to file... ");
-        tin.savePLY(filename.c_str(), false);
-        logWriter(" done!\n");
     }
 }
 

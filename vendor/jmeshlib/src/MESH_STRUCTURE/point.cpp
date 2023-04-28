@@ -29,6 +29,7 @@
 #include <stdlib.h>
 #include <limits.h>
 #include <errno.h>
+#include <stdexcept>
 
 
 const Point INFINITE_POINT(DBL_MAX, DBL_MAX, DBL_MAX);
@@ -230,7 +231,9 @@ double Point::getAngle(const Point& p) const
 {
  double ac, l = (length()*(p.length()));
 
- if (l == 0.0) {JMesh::warning("getAngle : One or both vectors are null !\n"); return -1.0;}
+ if (l == 0.0) {
+  throw std::runtime_error("One or both vectors are null");
+ }
 
  ac = ((*this)*p)/l;
  if ((FABS((ac - 1.0))) < JMesh::acos_tolerance) ac = 0.0;
