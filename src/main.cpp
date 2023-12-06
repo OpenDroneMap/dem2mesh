@@ -294,7 +294,7 @@ void readBin(const std::string &filename, int blockX, int blockY, int thread){
     int yOffset = blockY * blockSizeY - blockYPad;
 
     int ptvidMapSize = arr_height * (subY - 1) + arr_width * (subX - 1) + 1;
-    int ptvidYOffset = arr_height * (subY - 1) + 1;
+    int ptvidYOffset = arr_height * (subX - 1) + 1;
     if (pointToVertexIdMap == nullptr){
         pointToVertexIdMap = new long[ptvidMapSize];
         memset(pointToVertexIdMap, -1, ptvidMapSize*sizeof(*pointToVertexIdMap));
