@@ -433,13 +433,6 @@ int main(int argc, char **argv) {
         logWriter("Reading raster...\n");
         logWriter("Total vertices before simplification: %llu\n", vertex_count);
 
-        // int qtreeLevels = 0;
-        // int blockSizeX = (std::min)(arr_width, MaxTileLength.value);
-        // int blockSizeY = (std::min)(arr_height, MaxTileLength.value);
-        // subX = arr_width / blockSizeX;
-        // subY = arr_height / blockSizeY;
-        // int numBlocks = subX * subY;
-        
         int qtreeLevelsX = 0;
         while(true){
             subX = (int)pow(2, qtreeLevelsX);
@@ -478,9 +471,62 @@ int main(int argc, char **argv) {
         omp_lock_t readLock;
         omp_init_lock(&readLock);
 
+        // If there's a nodata value, we need to perform a first pass
+        // on the raster by checking for nodata values, as some blocks
+        // might be completely empty. If we have lots of empty blocks,
+        // our estimate for the triangle count will be terribly off
+        int emptyBlocks = 0;
+        bool *emptyTable = new bool[subX * subY];
+        memset(emptyTable, false, subX * subY);
+
+        if (hasNoData){
+            #pragma omp parallel for collapse(2)
+            for (int blockX = 0; blockX < subX; blockX++){
+                for (int blockY = 0; blockY < subY; blockY++){
+                    int t = omp_get_thread_num();
+                    int blockXPad = blockX == 0 ? 0 : 1; // Blocks > 0 need to re-add a column for seamless meshing
+                    int blockYPad = blockY == 0 ? 0 : 1; // Blocks > 0 need to re-add a row for seamless meshing
+                    int xOffset = blockX * blockSizeX - blockXPad;
+                    int yOffset = blockY * blockSizeY - blockYPad;
+
+                    logWriter("Scanning block (%d,%d)\n", blockX, blockY);
+
+                    for (int y = 0; y < blockSizeY + blockYPad; y++){
+
+                        omp_set_lock(&readLock);
+                        if (band->RasterIO( GF_Read, xOffset, yOffset + y, blockSizeX + blockXPad, 1,
+                                            rasterData + t * (blockSizeX + 1), blockSizeX + blockXPad, 1, GDT_Float32, 0, 0 ) == CE_Failure){
+                            std::cerr << "Cannot access raster data" << std::endl;
+                            exit(EXIT_FAILURE);
+                        }
+                        omp_unset_lock(&readLock);
+                    }
+
+                    bool empty = true;
+                    for (int x = 0; x < blockSizeX + blockXPad; x++){
+                        float z = (rasterData + t * (blockSizeX + 1))[x];
+                        if (z != nodata){
+                            empty = false;
+                            break;
+                        }
+                    }
+
+                    if (empty){
+                        emptyBlocks++;
+                        emptyTable[blockY * subX + blockX] = true;
+                    }
+                }
+            }
+        }
+
+        logWriter("Empty blocks: %d\n", emptyBlocks);
+        numBlocks -= emptyBlocks;
+
         #pragma omp parallel for collapse(2)
         for (int blockX = 0; blockX < subX; blockX++){
             for (int blockY = 0; blockY < subY; blockY++){
+                if (emptyTable[blockY * subX + blockX]) continue;
+
                 int t = omp_get_thread_num();
                 int blockXPad = blockX == 0 ? 0 : 1; // Blocks > 0 need to re-add a column for seamless meshing
                 int blockYPad = blockY == 0 ? 0 : 1; // Blocks > 0 need to re-add a row for seamless meshing
@@ -588,6 +634,8 @@ int main(int argc, char **argv) {
 
             for (int blockX = 0; blockX < subX; blockX++){
                 for (int blockY = 0; blockY < subY; blockY++){
+                    if (emptyTable[blockY * subX + blockX]) continue;
+                    
                     std::stringstream ss;
                     ss << OutputFile.value << "." << blockX << "-" << blockY << ".bin";
                     logWriter("Reading %s\n", ss.str().c_str());
