@@ -63,7 +63,7 @@ typedef struct PlyFace{
 size_t fsize = sizeof(uint32_t) * 3;
 
 int arr_width, arr_height;
-int subdivisions;
+int subX, subY;
 int blockSizeX, blockSizeY;
 
 #define IS_BIG_ENDIAN (*(uint16_t *)"\0\xff" < 0x100)
@@ -293,8 +293,8 @@ void readBin(const std::string &filename, int blockX, int blockY, int thread){
     int xOffset = blockX * blockSizeX - blockXPad;
     int yOffset = blockY * blockSizeY - blockYPad;
 
-    int ptvidMapSize = arr_height * (subdivisions - 1) + arr_width * (subdivisions - 1) + 1;
-    int ptvidYOffset = arr_height * (subdivisions - 1) + 1;
+    int ptvidMapSize = arr_height * (subY - 1) + arr_width * (subX - 1) + 1;
+    int ptvidYOffset = arr_height * (subY - 1) + 1;
     if (pointToVertexIdMap == nullptr){
         pointToVertexIdMap = new long[ptvidMapSize];
         memset(pointToVertexIdMap, -1, ptvidMapSize*sizeof(*pointToVertexIdMap));
@@ -308,7 +308,7 @@ void readBin(const std::string &filename, int blockX, int blockY, int thread){
         y = static_cast<int>(vertices[1]);
 
         // Detect edge points
-        if ((blockX > 0 && x == xOffset) || (blockX < subdivisions - 1 && x == xOffset + blockWidth - 1)){
+        if ((blockX > 0 && x == xOffset) || (blockX < subX - 1 && x == xOffset + blockWidth - 1)){
             if (pointToVertexIdMap[y + (x / blockSizeX) * arr_height] == -1){
                 pointToVertexIdMap[y + (x / blockSizeX) * arr_height] = static_cast<long>(i + voffset);
             }else{
@@ -318,7 +318,7 @@ void readBin(const std::string &filename, int blockX, int blockY, int thread){
             }
         }
 
-        else if ((blockY > 0 && y == yOffset) || (blockY < subdivisions - 1 && y == yOffset + blockHeight - 1)){
+        else if ((blockY > 0 && y == yOffset) || (blockY < subY - 1 && y == yOffset + blockHeight - 1)){
             if (pointToVertexIdMap[ptvidYOffset + x + (y / blockSizeY) * arr_width] == -1){
                 pointToVertexIdMap[ptvidYOffset + x + (y / blockSizeY) * arr_width] = i + voffset;
             }else{
@@ -433,21 +433,37 @@ int main(int argc, char **argv) {
         logWriter("Reading raster...\n");
         logWriter("Total vertices before simplification: %llu\n", vertex_count);
 
-        int qtreeLevels = 0;
-        int numBlocks = 1;
+        // int qtreeLevels = 0;
+        // int blockSizeX = (std::min)(arr_width, MaxTileLength.value);
+        // int blockSizeY = (std::min)(arr_height, MaxTileLength.value);
+        // subX = arr_width / blockSizeX;
+        // subY = arr_height / blockSizeY;
+        // int numBlocks = subX * subY;
+        
+        int qtreeLevelsX = 0;
         while(true){
-            subdivisions = (int)pow(2, qtreeLevels);
-            numBlocks = subdivisions * subdivisions;
-            blockSizeX = arr_width / subdivisions;
-            blockSizeY = arr_height / subdivisions;
-            if (blockSizeX > MaxTileLength.value || blockSizeY > MaxTileLength.value){
-                qtreeLevels++;
+            subX = (int)pow(2, qtreeLevelsX);
+            blockSizeX = arr_width / subX;
+            if (blockSizeX > MaxTileLength.value){
+                qtreeLevelsX++;
+            }else{
+                break;
+            }
+        }
+        int qtreeLevelsY = 0;
+        while(true){
+            subY = (int)pow(2, qtreeLevelsY);
+            blockSizeY = arr_height / subY;
+            if (blockSizeY > MaxTileLength.value){
+                qtreeLevelsY++;
             }else{
                 break;
             }
         }
 
-        logWriter("Blocks depth: %d\n", qtreeLevels);
+        int numBlocks = subX * subY;
+
+        logWriter("Subdivisions: %dx%d\n", subX, subY);
         logWriter("Splitting area in %d\n", numBlocks);
         logWriter("Block size is %d, %d\n", blockSizeX, blockSizeY);
 
@@ -463,8 +479,8 @@ int main(int argc, char **argv) {
         omp_init_lock(&readLock);
 
         #pragma omp parallel for collapse(2)
-        for (int blockX = 0; blockX < subdivisions; blockX++){
-            for (int blockY = 0; blockY < subdivisions; blockY++){
+        for (int blockX = 0; blockX < subX; blockX++){
+            for (int blockY = 0; blockY < subY; blockY++){
                 int t = omp_get_thread_num();
                 int blockXPad = blockX == 0 ? 0 : 1; // Blocks > 0 need to re-add a column for seamless meshing
                 int blockYPad = blockY == 0 ? 0 : 1; // Blocks > 0 need to re-add a row for seamless meshing
@@ -538,7 +554,7 @@ int main(int argc, char **argv) {
                 // overshoot the triangle count requirement
                 // since we'll simplify the final mesh anyway.
                 // This leads to more uniform meshes.
-                if (qtreeLevels > 0) trianglesPerBlock = trianglesPerBlock * 3 / 2;
+                if (numBlocks > 1) trianglesPerBlock = trianglesPerBlock * 3 / 2;
 
                 int target_count = std::min(trianglesPerBlock, static_cast<int>(Simplify::triangles[t]->size()));
 
@@ -546,9 +562,9 @@ int main(int argc, char **argv) {
                 logWriter("Simplifying...\n");
                 simplify(target_count, t);
 
-                if (qtreeLevels == 0){
+                if (numBlocks <= 1){
                     transform(extent, t);
-                    logWriter("Single quad tree level, saving to PLY\n");
+                    logWriter("Single block, saving to PLY\n");
                     saveFinal(OutputFile.value, t, EdgeSwapThreshold.value);
                 }else{
                     logWriter("Writing to binary file...");
@@ -563,15 +579,15 @@ int main(int argc, char **argv) {
         delete[] rasterData;
         GDALClose(dataset);
 
-        if (qtreeLevels > 0){
+        if (numBlocks > 1){
             // Merge
             logWriter("Merge step...\n");
 
             Simplify::vertices[0]->clear();
             Simplify::triangles[0]->clear();
 
-            for (int blockX = 0; blockX < subdivisions; blockX++){
-                for (int blockY = 0; blockY < subdivisions; blockY++){
+            for (int blockX = 0; blockX < subX; blockX++){
+                for (int blockY = 0; blockY < subY; blockY++){
                     std::stringstream ss;
                     ss << OutputFile.value << "." << blockX << "-" << blockY << ".bin";
                     logWriter("Reading %s\n", ss.str().c_str());
