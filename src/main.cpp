@@ -512,6 +512,7 @@ int main(int argc, char **argv) {
                     }
 
                     if (empty){
+                        #pragma omp atomic
                         emptyBlocks++;
                         emptyTable[blockY * subX + blockX] = true;
                     }
@@ -635,7 +636,7 @@ int main(int argc, char **argv) {
             for (int blockX = 0; blockX < subX; blockX++){
                 for (int blockY = 0; blockY < subY; blockY++){
                     if (emptyTable[blockY * subX + blockX]) continue;
-                    
+
                     std::stringstream ss;
                     ss << OutputFile.value << "." << blockX << "-" << blockY << ".bin";
                     logWriter("Reading %s\n", ss.str().c_str());
