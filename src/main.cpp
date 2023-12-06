@@ -504,6 +504,7 @@ int main(int argc, char **argv) {
                             float z = (rasterData + t * (blockSizeX + 1))[x];
                             if (z != nodata){
                                 empty = false;
+                                y = blockSizeY + blockYPad; // Exit outer loop
                                 break;
                             }
                         }
