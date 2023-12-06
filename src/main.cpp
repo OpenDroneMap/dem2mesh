@@ -491,16 +491,15 @@ int main(int argc, char **argv) {
 
                     logWriter("Scanning block (%d,%d)\n", blockX, blockY);
 
+                    omp_set_lock(&readLock);
                     for (int y = 0; y < blockSizeY + blockYPad; y++){
-
-                        omp_set_lock(&readLock);
                         if (band->RasterIO( GF_Read, xOffset, yOffset + y, blockSizeX + blockXPad, 1,
                                             rasterData + t * (blockSizeX + 1), blockSizeX + blockXPad, 1, GDT_Float32, 0, 0 ) == CE_Failure){
                             std::cerr << "Cannot access raster data" << std::endl;
                             exit(EXIT_FAILURE);
                         }
-                        omp_unset_lock(&readLock);
                     }
+                    omp_unset_lock(&readLock);
 
                     bool empty = true;
                     for (int x = 0; x < blockSizeX + blockXPad; x++){
@@ -539,16 +538,13 @@ int main(int argc, char **argv) {
 
                 logWriter("Processing block (%d,%d)\n", blockX, blockY);
 
+                omp_set_lock(&readLock);
                 for (int y = 0; y < blockSizeY + blockYPad; y++){
-
-                    omp_set_lock(&readLock);
                     if (band->RasterIO( GF_Read, xOffset, yOffset + y, blockSizeX + blockXPad, 1,
                                         rasterData + t * (blockSizeX + 1), blockSizeX + blockXPad, 1, GDT_Float32, 0, 0 ) == CE_Failure){
                         std::cerr << "Cannot access raster data" << std::endl;
                         exit(EXIT_FAILURE);
                     }
-                    omp_unset_lock(&readLock);
-
                     for (int x = 0; x < blockSizeX + blockXPad; x++){
                         Simplify::Vertex v;
                         v.p.x = xOffset + x;
@@ -558,6 +554,7 @@ int main(int argc, char **argv) {
                         Simplify::vertices[t]->push_back(v);
                     }
                 }
+                omp_unset_lock(&readLock);
 
                 unsigned int cols = blockSizeX + blockXPad;
                 unsigned int rows = blockSizeY + blockYPad;
