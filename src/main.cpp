@@ -491,6 +491,8 @@ int main(int argc, char **argv) {
 
                     logWriter("Scanning block (%d,%d)\n", blockX, blockY);
 
+                    bool empty = true;
+
                     omp_set_lock(&readLock);
                     for (int y = 0; y < blockSizeY + blockYPad; y++){
                         if (band->RasterIO( GF_Read, xOffset, yOffset + y, blockSizeX + blockXPad, 1,
@@ -498,17 +500,15 @@ int main(int argc, char **argv) {
                             std::cerr << "Cannot access raster data" << std::endl;
                             exit(EXIT_FAILURE);
                         }
-                    }
-                    omp_unset_lock(&readLock);
-
-                    bool empty = true;
-                    for (int x = 0; x < blockSizeX + blockXPad; x++){
-                        float z = (rasterData + t * (blockSizeX + 1))[x];
-                        if (z != nodata){
-                            empty = false;
-                            break;
+                        for (int x = 0; x < blockSizeX + blockXPad; x++){
+                            float z = (rasterData + t * (blockSizeX + 1))[x];
+                            if (z != nodata){
+                                empty = false;
+                                break;
+                            }
                         }
                     }
+                    omp_unset_lock(&readLock);
 
                     if (empty){
                         #pragma omp atomic
