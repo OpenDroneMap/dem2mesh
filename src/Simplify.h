@@ -357,7 +357,7 @@ namespace Simplify
 
 			// target number of triangles reached ? Then break
 			if ((verbose) && (iteration%5==0)) {
-				printf("iteration %d - triangles %d threshold %g\n",iteration,triangle_count-deleted_triangles, threshold);
+				// printf("iteration %d - triangles %d threshold %g\n",iteration,triangle_count-deleted_triangles, threshold);
 			}
 
 			// remove vertices & mark deleted triangles
@@ -413,6 +413,9 @@ namespace Simplify
 				if(triangle_count-deleted_triangles<=target_count)break;
 			}
 		}
+
+		printf("Triangle count: %d\n", triangle_count-deleted_triangles);
+		
 		// clean up mesh
         compact_mesh(thread);
 	} //simplify_mesh()

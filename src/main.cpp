@@ -604,7 +604,7 @@ int main(int argc, char **argv) {
                 int target_count = std::min(trianglesPerBlock, static_cast<int>(Simplify::triangles[t]->size()));
 
                 logWriter("Sampled %d faces, target is %d\n", static_cast<int>(Simplify::triangles[t]->size()), target_count);
-                logWriter("Simplifying...\n");
+                // logWriter("Simplifying...\n");
                 simplify(target_count, t);
 
                 if (numBlocks <= 1){
@@ -612,11 +612,11 @@ int main(int argc, char **argv) {
                     logWriter("Single block, saving to PLY\n");
                     saveFinal(OutputFile.value, t, EdgeSwapThreshold.value);
                 }else{
-                    logWriter("Writing to binary file...");
+                    // logWriter("Writing to binary file...");
                     std::stringstream ss;
                     ss << OutputFile.value << "." << blockX << "-" << blockY << ".bin";
                     writeBin(ss.str(), blockSizeX + blockXPad, blockSizeY + blockYPad, t);
-                    logWriter(" done!\n");
+                    // logWriter(" done!\n");
                 }
             }
         }
